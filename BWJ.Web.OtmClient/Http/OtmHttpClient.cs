@@ -1,10 +1,8 @@
 ﻿using BWJ.Net.Http;
 using BWJ.Net.Http.RequestBuilder;
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 
 namespace BWJ.Web.OTM.Http
 {
