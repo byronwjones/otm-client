@@ -19,6 +19,7 @@ namespace BWJ.Web.OTM.Http
             var httpClient = new HttpClient(handler);
             httpClient.BaseAddress = new Uri("https://onlineterritorymanager.com");
             httpClient.DefaultRequestHeaders.Clear();
+
             httpClient.DefaultRequestHeaders.Connection.Add("keep-alive");
             httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
             httpClient.DefaultRequestHeaders.Add("Origin", "https://onlineterritorymanager.com");
