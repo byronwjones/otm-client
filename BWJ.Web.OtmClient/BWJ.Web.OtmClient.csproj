@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="0.16.1" />
     <PackageReference Include="BWJ.Net.Http.FluentHttpClient" Version="0.2.0" />
     <PackageReference Include="BWJ.Net.Http.RequestBuilderExtensions.Html" Version="0.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
