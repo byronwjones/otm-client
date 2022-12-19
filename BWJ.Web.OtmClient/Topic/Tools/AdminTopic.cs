@@ -1,5 +1,5 @@
 ﻿using BWJ.Web.OTM.Exceptions;
-using BWJ.Web.OTM.Http;
+using BWJ.Web.OTM.Internal.Http;
 using BWJ.Web.OTM.Models.Request.Tools.Admin;
 using System;
 using System.IO;
@@ -8,7 +8,13 @@ using System.Threading.Tasks;
 
 namespace BWJ.Web.OTM.Topic.Tools
 {
-    public sealed class AdminTopic
+    public interface IAdminTopic
+    {
+        Task<Stream> GetAddressBackup(string session);
+        Task RestoreAddressBackup(byte[] fileData, string session);
+    }
+
+    internal class AdminTopic : IAdminTopic
     {
         private readonly OtmHttpClient _client;
 
@@ -42,16 +48,19 @@ namespace BWJ.Web.OTM.Topic.Tools
             }
         }
 
-        public async Task RestoreAddressBackup(RestoreAddressBackupRequest request, string session)
+        public async Task RestoreAddressBackup(byte[] fileData, string session)
         {
-            if (request is null)
+            if ((fileData?.Length ?? 0) == 0)
             {
-                throw new ArgumentNullException(nameof(request));
+                throw new ArgumentNullException(nameof(fileData));
             }
             if (string.IsNullOrWhiteSpace(session))
             {
                 throw new ArgumentException(nameof(session));
             }
+
+            var request = new RestoreAddressBackupRequest();
+            request.newaddrfile.Content = fileData;
 
             var response = await _client
                 .Post("RestoreBackupAdmin")

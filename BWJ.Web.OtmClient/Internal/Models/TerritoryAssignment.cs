@@ -1,8 +1,9 @@
-﻿using System;
+﻿using BWJ.Web.OTM.Models;
+using System;
 
-namespace BWJ.Web.OTM.Models.Internal
+namespace BWJ.Web.OTM.Internal.Models
 {
-    internal class TerritoryFolderInfo
+    internal class TerritoryAssignment : ITerritoryAssignment
     {
         public int AssignmentId { get; set; }
         public string Description { get; set; }

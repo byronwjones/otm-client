@@ -1,8 +1,9 @@
-﻿using System;
+﻿using BWJ.Web.OTM.Models;
+using System;
 
-namespace BWJ.Web.OTM.Models.Internal
+namespace BWJ.Web.OTM.Internal.Models
 {
-    internal class TerritoryListInfo
+    internal class Territory : ITerritory
     {
         public int Id { get; set; }
         public string Name { get; set; }
@@ -12,5 +13,7 @@ namespace BWJ.Web.OTM.Models.Internal
         public int ConfirmedAddressCount { get; set; }
         public DateTime? LastWorked { get; set; }
         public DateTime? LastCheckIn { get; set; }
+
+        public ITerritoryAssignment AssignmentInfo { get; set; }
     }
 }

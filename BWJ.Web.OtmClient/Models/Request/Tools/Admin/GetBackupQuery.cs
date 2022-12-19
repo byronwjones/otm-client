@@ -1,6 +1,6 @@
 ﻿namespace BWJ.Web.OTM.Models.Request.Tools.Admin
 {
-    public class GetBackupQuery
+    internal class GetBackupQuery
     {
         public string what { get; set; }
     }

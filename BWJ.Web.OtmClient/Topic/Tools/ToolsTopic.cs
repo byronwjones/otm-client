@@ -1,8 +1,16 @@
-﻿using BWJ.Web.OTM.Http;
+﻿using BWJ.Web.OTM.Internal.Http;
 
 namespace BWJ.Web.OTM.Topic.Tools
 {
-    public sealed class ToolsTopic
+    public interface IToolsTopic
+    {
+        IAddressTopic Address { get; }
+        IAdminTopic Admin { get; }
+        IGroupTopic Group { get; }
+        IUserTopic Users { get; }
+    }
+
+    internal class ToolsTopic : IToolsTopic
     {
         private readonly OtmHttpClient _client;
 
@@ -10,8 +18,14 @@ namespace BWJ.Web.OTM.Topic.Tools
         {
             _client = client;
             Admin = new AdminTopic(_client);
+            Group = new GroupTopic(_client);
+            Users = new UserTopic(_client, Group);
+            Address = new AddressTopic(_client);
         }
 
-        public AdminTopic Admin { get; }
+        public IAdminTopic Admin { get; }
+        public IUserTopic Users { get; }
+        public IGroupTopic Group { get; }
+        public IAddressTopic Address { get; }
     }
 }

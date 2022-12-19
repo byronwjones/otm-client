@@ -1,14 +1,20 @@
 ﻿using BWJ.Web.OTM.Exceptions;
-using BWJ.Web.OTM.Http;
+using BWJ.Web.OTM.Internal.Http;
 using BWJ.Web.OTM.Models.Request.Authentication;
 using System;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BWJ.Web.OTM.Topic
 {
-    public sealed class AuthenticationTopic
+    public interface IAuthenticationTopic
+    {
+        Task<string> SignInUser(string username, string password);
+    }
+
+    internal class AuthenticationTopic : IAuthenticationTopic
     {
         private readonly OtmHttpClient _client;
 
@@ -35,11 +41,11 @@ namespace BWJ.Web.OTM.Topic
                     username = username,
                     password = password
                 })
+                .AcceptStatusCodes(HttpStatusCode.Redirect, HttpStatusCode.OK)
                 .SendAsync();
 
-            var codeFamily = ((int)response.StatusCode / 100) * 100;
             // we only get a redirect when login succeeded
-            if (codeFamily == 300)
+            if (response.StatusCode == HttpStatusCode.Redirect)
             {
                 var sessionCookie = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
                 if (sessionCookie is null)
@@ -53,14 +59,9 @@ namespace BWJ.Web.OTM.Topic
 
                 return ParseSessionCookie(sessionCookie);
             }
-            else if (codeFamily == 200)
-            {
-                return null; // login failed
-            }
             else
             {
-                var body = await response.Content.ReadAsStringAsync();
-                throw new StatusCodeUnexpectedException(response.StatusCode, response.RequestMessage.RequestUri.ToString(), body);
+                return null; // login failed
             }
         }
 

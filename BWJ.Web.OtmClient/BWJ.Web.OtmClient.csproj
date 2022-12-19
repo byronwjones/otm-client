@@ -3,11 +3,18 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>BWJ.Web.OTM</RootNamespace>
+    <Version>0.1.1</Version>
+    <Authors>Byron W Jones</Authors>
+    <Description>An HTTP client for interacting with data on https://www.onlineterritorymanager.com</Description>
+    <Copyright>2021 Byron W Jones. All rights reserved</Copyright>
+    <RepositoryUrl>https://github.com/byronwjones/otm-client</RepositoryUrl>
+    <PackageLicenseExpression>MS-PL</PackageLicenseExpression>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="0.16.1" />
-    <PackageReference Include="BWJ.Net.Http.FluentHttpClient" Version="0.2.0" />
+    <PackageReference Include="BWJ.Net.Http.FluentHttpClient" Version="0.4.0" />
     <PackageReference Include="BWJ.Net.Http.RequestBuilderExtensions.Html" Version="0.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>

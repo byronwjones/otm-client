@@ -4,7 +4,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
-namespace BWJ.Web.OTM.Http
+namespace BWJ.Web.OTM.Internal.Http
 {
     internal class OtmHttpClient
     {
@@ -23,9 +23,9 @@ namespace BWJ.Web.OTM.Http
             httpClient.DefaultRequestHeaders.Connection.Add("keep-alive");
             httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
             httpClient.DefaultRequestHeaders.Add("Origin", "https://onlineterritorymanager.com");
-            httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(".NET Standard", "2.0"));
+            httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DotNetStandard", "2.0"));
             httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(System.Net.Http.HttpClient)"));
-            httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("OTM Http Client", "0.1.0"));
+            httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("OtmHttpClient", "0.1.0"));
             httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(+https://github.com/byronwjones/otm-client)"));
 
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));

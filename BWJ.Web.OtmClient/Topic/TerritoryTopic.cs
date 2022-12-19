@@ -1,11 +1,15 @@
 ﻿using AngleSharp.Dom;
+using BWJ.Net.Http.RequestBuilder;
 using BWJ.Net.Http.RequestBuilderExtensions.Html;
 using BWJ.Web.OTM.Exceptions;
-using BWJ.Web.OTM.Http;
+using BWJ.Web.OTM.Internal;
+using BWJ.Web.OTM.Internal.Http;
+using BWJ.Web.OTM.Internal.Models;
 using BWJ.Web.OTM.Models;
-using BWJ.Web.OTM.Models.Internal;
+using BWJ.Web.OTM.Models.Request.Territory;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -13,7 +17,16 @@ using System.Threading.Tasks;
 
 namespace BWJ.Web.OTM.Topic
 {
-    public sealed class TerritoryTopic
+    public interface ITerritoryTopic
+    {
+        Task CheckInTerritories(string session, IEnumerable<int> territoryAssignmentIds, int? reassignTo = null);
+        Task CheckInTerritory(string session, int territoryAssignmentId, int? reassignTo = null);
+        Task CheckOutTerritory(string session, int territoryId, int recipientId);
+        Task<Stream> GetTerritoryDocument(string session, int territoryAssignmentId);
+        Task<IEnumerable<ITerritory>> GetTerritoryInfo(string session);
+    }
+
+    public sealed class TerritoryTopic : ITerritoryTopic
     {
         private readonly OtmHttpClient _client;
 
@@ -22,7 +35,79 @@ namespace BWJ.Web.OTM.Topic
             _client = client;
         }
 
-        public async Task<IEnumerable<TerritoryInfo>> GetTerritoryInfo(string session)
+        public async Task CheckOutTerritory(string session, int territoryId, int recipientId)
+        {
+            if (string.IsNullOrWhiteSpace(session))
+            {
+                throw new ArgumentException(nameof(session));
+            }
+            if (territoryId < 1)
+            {
+                throw new ArgumentException(nameof(territoryId));
+            }
+            if (recipientId < 1)
+            {
+                throw new ArgumentException(nameof(recipientId));
+            }
+
+            await _client
+                .Get("ListStand")
+                .IncludeQuery(new CheckOutTerritoryQuery { TerrID = territoryId, userid = recipientId })
+                .IncludeSession(session)
+                .AcceptStatusCodes(HttpStatusCode.OK)
+                .SendAsync();
+        }
+
+        public async Task CheckInTerritories(string session, IEnumerable<int> territoryAssignmentIds, int? reassignTo = null)
+        {
+            if (string.IsNullOrWhiteSpace(session))
+            {
+                throw new ArgumentException(nameof(session));
+            }
+            if (territoryAssignmentIds is null ||
+                territoryAssignmentIds.Any() == false ||
+                territoryAssignmentIds.Any(id => id < 1))
+            {
+                throw new ArgumentException(nameof(territoryAssignmentIds));
+            }
+
+            var request = new CheckInTerritoryRequest { newuserid = reassignTo };
+            foreach (var id in territoryAssignmentIds)
+            {
+                request.MyTerID.Add(id);
+            }
+
+            await _client
+                .Post("MyTer")
+                .Form(request)
+                .IncludeSession(session)
+                .AcceptStatusCodes(HttpStatusCode.OK)
+                .SendAsync();
+        }
+
+        public async Task CheckInTerritory(string session, int territoryAssignmentId, int? reassignTo = null)
+            => await CheckInTerritories(session, new List<int> { territoryAssignmentId }, reassignTo);
+
+        public async Task<Stream> GetTerritoryDocument(string session, int territoryAssignmentId)
+        {
+            if (string.IsNullOrWhiteSpace(session))
+            {
+                throw new ArgumentException(nameof(session));
+            }
+            if (territoryAssignmentId < 1)
+            {
+                throw new ArgumentException(nameof(territoryAssignmentId));
+            }
+
+            return await _client
+                .Get("PrintPreviewSimpleR2")
+                .IncludeQuery(new DownloadTerritoryQuery { TerritoryAssignmentId = territoryAssignmentId })
+                .IncludeSession(session)
+                .AcceptStatusCodes(HttpStatusCode.OK)
+                .SendForStreamAsync();
+        }
+
+        public async Task<IEnumerable<ITerritory>> GetTerritoryInfo(string session)
         {
             if (string.IsNullOrWhiteSpace(session))
             {
@@ -33,13 +118,14 @@ namespace BWJ.Web.OTM.Topic
             var assignments = await GetTerritoryFolderInfo(session);
 
             return territories
-                .Select(t => new TerritoryInfo(
-                    t,
-                    assignments.FirstOrDefault(a => a.Description.Contains($"{t.Name} - {t.Description}"))
-                    ));
+                .Select(t =>
+                {
+                    t.AssignmentInfo = assignments.FirstOrDefault(a => a.Description.Contains($"{t.Name} - {t.Description}"));
+                    return t;
+                });
         }
 
-        private async Task<List<TerritoryFolderInfo>> GetTerritoryFolderInfo(string session)
+        private async Task<List<TerritoryAssignment>> GetTerritoryFolderInfo(string session)
         {
             var html = await _client
                 .Get("MyTer")
@@ -58,7 +144,7 @@ namespace BWJ.Web.OTM.Topic
                 throw new HtmlParsingException("Failed to parse checked out territories list", ex);
             }
         }
-        private async Task<List<TerritoryListInfo>> GetTerritoryListInfo(string session)
+        private async Task<List<Territory>> GetTerritoryListInfo(string session)
         {
             var html = await _client
                 .Get("GetStandard")
@@ -78,9 +164,9 @@ namespace BWJ.Web.OTM.Topic
             }
         }
 
-        private static TerritoryFolderInfo ToTerritoryFolderInfo(IElement e)
+        private static TerritoryAssignment ToTerritoryFolderInfo(IElement e)
         {
-            var info = new TerritoryFolderInfo();
+            var info = new TerritoryAssignment();
             try
             {
                 var cells = e.QuerySelectorAll("td");
@@ -93,8 +179,7 @@ namespace BWJ.Web.OTM.Topic
                 info.AssignedTo = GetText(cells[1], "assigned publisher cell");
                 info.Description = GetText(cells[2], "territory description cell");
                 SetCompletedPercentages(cells[3], info);
-                info.DateAssigned = GetDate(cells[4], "Date created cell") ??
-                    throw new HtmlParsingException("Expected a date in date created cell, but it was empty");
+                info.DateAssigned = Utils.GetDate(cells[4], "Date created cell").GetValueOrDefault();
                 info.TerritoryType = GetText(cells[5], "territory type cell");
                 info.RouteState = GetRouteState(cells[9]);
                 info.Notes = cells[13].TextContent?.Trim();
@@ -106,9 +191,9 @@ namespace BWJ.Web.OTM.Topic
 
             return info;
         }
-        private static TerritoryListInfo ToTerritoryListInfo(IElement e)
+        private static Territory ToTerritoryListInfo(IElement e)
         {
-            var info = new TerritoryListInfo();
+            var info = new Territory();
             try
             {
                 var cells = e.QuerySelectorAll("td");
@@ -128,8 +213,8 @@ namespace BWJ.Web.OTM.Topic
                 info.AvailableAddressCount = GetInt(cells[2], "Number available addresses");
                 info.AddressCount = GetInt(cells[3], "Number of addresses");
                 info.ConfirmedAddressCount = GetInt(cells[4], "Number of confirmed addresses");
-                info.LastWorked = GetDate(cells[5], "Last worked date");
-                info.LastCheckIn = GetDate(cells[6], "Last check in date");
+                info.LastWorked = Utils.GetDate(cells[5], "Last worked date", optional: true);
+                info.LastCheckIn = Utils.GetDate(cells[6], "Last check in date", optional: true);
             }
             catch (Exception ex)
             {
@@ -162,7 +247,7 @@ namespace BWJ.Web.OTM.Topic
 
             return TerritoryRouteState.Indeterminate;
         }
-        private static void SetCompletedPercentages(IElement e, TerritoryFolderInfo info)
+        private static void SetCompletedPercentages(IElement e, TerritoryAssignment info)
         {
             var strPercentages = GetText(e, "percentage completed cell");
             if (false == Regex.IsMatch(strPercentages, @"^[0-9]{1,3}\s*%\s*/\s*[0-9]{1,3}\s*%$"))
@@ -235,23 +320,6 @@ namespace BWJ.Web.OTM.Topic
             }
 
             return value;
-        }
-        private static DateTime? GetDate(IElement e, string dataDescription)
-        {
-            var text = WebUtility.HtmlDecode(e.TextContent)?.Trim();
-            if (string.IsNullOrWhiteSpace(text)) { return null; }
-
-            if (false == Regex.IsMatch(text, @"^[0-9]{1,2}/[0-9]{1,2}/([0-9]{2}|[0-9]{4})$"))
-            {
-                throw new HtmlParsingException($"{dataDescription} is in an unexpected format. Expected 'mm/dd/yy' or 'mm/dd/yyyy', got '{text}'");
-            }
-
-            var dateParts = text.Split('/');
-            var year = Convert.ToInt32(dateParts[2]);
-            return new DateTime(
-                year: year < 100 ? (2000 + year) : year,
-                month: Convert.ToInt32(dateParts[0]),
-                day: Convert.ToInt32(dateParts[1]));
         }
     }
 }

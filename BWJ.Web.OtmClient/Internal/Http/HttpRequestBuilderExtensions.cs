@@ -1,6 +1,6 @@
 ﻿using BWJ.Net.Http.RequestBuilder;
 
-namespace BWJ.Web.OTM.Http
+namespace BWJ.Web.OTM.Internal.Http
 {
     public static class HttpRequestBuilderExtensions
     {

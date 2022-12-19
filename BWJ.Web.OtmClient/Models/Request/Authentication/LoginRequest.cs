@@ -2,7 +2,7 @@
 
 namespace BWJ.Web.OTM.Models.Request.Authentication
 {
-    public class LoginRequest
+    internal class LoginRequest
     {
         public string username { get; set; }
         public string password { get; set; }
