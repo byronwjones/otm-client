@@ -19,7 +19,7 @@ namespace BWJ.Web.OTM.Topic.Tools
     {
         Task CreateUser(CreateUserRequest request, string session);
         Task<IOtmUser> GetSignedInUser(string session);
-        Task<IEnumerable<IOtmUser>> GetUsers(string session);
+        Task<IEnumerable<IOrganizationUser>> GetOrganizationUsers(string session);
         Task<bool> IsUsernameUnique(string username, string session);
     }
 
@@ -52,7 +52,7 @@ namespace BWJ.Web.OTM.Topic.Tools
             return ToUser(data);
         }
 
-        public async Task<IEnumerable<IOtmUser>> GetUsers(string session)
+        public async Task<IEnumerable<IOrganizationUser>> GetOrganizationUsers(string session)
         {
             var html = await _client
                 .Get("Users")
@@ -90,7 +90,7 @@ namespace BWJ.Web.OTM.Topic.Tools
                 .AcceptStatusCodes(HttpStatusCode.OK)
                 .SendAsync();
 
-            var users = await GetUsers(session);
+            var users = await GetOrganizationUsers(session);
             if(users.Any(u => u.UserName == request.UserName) == false)
             {
                 throw new HttpException(HttpStatusCode.BadRequest, "Users.php", "User was not created on group account");
@@ -115,9 +115,9 @@ namespace BWJ.Web.OTM.Topic.Tools
             return response == "yes"; // 'no' means no user by this name exists
         }
 
-        private static IOtmUser GetUserFromTableRow(IElement e)
+        private static IOrganizationUser GetUserFromTableRow(IElement e)
         {
-            var user = new OtmUser();
+            var user = new OrganizationUser();
             try
             {
                 var cells = e.QuerySelectorAll("td");
