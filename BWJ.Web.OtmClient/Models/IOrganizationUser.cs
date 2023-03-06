@@ -2,14 +2,14 @@
 {
     public interface IOrganizationUser
     {
-        string Email { get; set; }
-        string FullName { get; set; }
-        Language Language { get; set; }
-        int? MaxNumberOfTerritoriesAllowed { get; set; }
-        string PhoneNumber { get; set; }
-        bool? PublicWitnessingApproved { get; set; }
-        string UserId { get; set; }
-        string UserName { get; set; }
-        OtmUserType UserType { get; set; }
+        string Email { get; }
+        string FullName { get; }
+        Language Language { get; }
+        int? MaxNumberOfTerritoriesAllowed { get; }
+        string PhoneNumber { get; }
+        bool? PublicWitnessingApproved { get; }
+        string UserId { get; }
+        string UserName { get; }
+        OtmUserType UserType { get; }
     }
 }
